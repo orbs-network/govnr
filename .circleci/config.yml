@@ -1,0 +1,13 @@
+version: 2
+jobs:
+  all-tests:
+    machine: true
+    steps:
+      - checkout
+      - run: go test ./...
+
+workflows:
+  version: 2
+  tests:
+    jobs:
+      - all-tests
