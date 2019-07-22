@@ -56,20 +56,20 @@ func TestTRun_GoOnce_LogsError(t *testing.T) {
 
 func TestTRun_GoOnce_PanicsAfterSubTestPasses(t *testing.T) {
 	expect := []string{
-		Passed, BeforeLoggerCreated, LoggedWithLogger, PanicOhNo,
+		Failed, Passed, BeforeLoggerCreated, LoggedWithLogger, PanicOhNo,
 	}
 	expectNot := []string{
-		Failed, AfterCallPanic, MustNotShow,
+		AfterCallPanic, MustNotShow,
 	}
 	executeGoTestRunner(t, expect, expectNot)
 }
 
 func TestTRun_GoOnce_LogsErrorAfterSubTestPasses(t *testing.T) {
 	expect := []string{
-		Passed, BeforeLoggerCreated, LoggedWithLogger, ErrorWithLogger,
+		Failed, Passed, BeforeLoggerCreated, LoggedWithLogger, ErrorWithLogger,
 	}
 	expectNot := []string{
-		Failed, MustNotShow,
+		MustNotShow,
 	}
 	executeGoTestRunner(t, expect, expectNot)
 }

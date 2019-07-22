@@ -28,7 +28,7 @@ func executeGoTestRunner(t *testing.T, expectedLogs []string, unexpectedLogs []s
 		"^("+t.Name()+")$").CombinedOutput()
 
 	goTestOutput := string(out)
-	ribbon := "------------------ EXTERNAL TEST OUTPUT (_supervised_in_test." + t.Name() + ")------------------"
+	ribbon := "------------------ EXTERNAL TEST OUTPUT (" + t.Name() + ") ------------------"
 	debugMsgOutput := fmt.Sprintln(ribbon, "\n", goTestOutput, "\n", ribbon)
 
 	for _, logLine := range expectedLogs {

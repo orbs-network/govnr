@@ -12,6 +12,8 @@ github.com/orbs-network/scribe v0.0.0-20190403093542-b68267cf85c1 h1:nfRo57EmeM+
 github.com/orbs-network/scribe v0.0.0-20190403093542-b68267cf85c1/go.mod h1:cQJZGIeLlL67v5bDZj7tGM6DBgemGp2UoGfpjiBsmFQ=
 github.com/orbs-network/scribe v0.0.0-20190722115936-84c5dcde2413 h1:WU5jzQUI/Z52Ri5Eqv7N+ocuvd/c2WHgVUUYsrKIfm0=
 github.com/orbs-network/scribe v0.0.0-20190722115936-84c5dcde2413/go.mod h1:FmGcbukz5eolO+mqzxwmuy4RF4UEoLfGJIeEDAoGsBU=
+github.com/orbs-network/scribe v0.1.0 h1:Kn/EQpifQFae+F7HRIoTIipUsSHZNcfQ3HJOhD/b+8M=
+github.com/orbs-network/scribe v0.1.0/go.mod h1:FmGcbukz5eolO+mqzxwmuy4RF4UEoLfGJIeEDAoGsBU=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
