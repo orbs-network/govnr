@@ -7,8 +7,11 @@
 package test
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"os/exec"
+	"path"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -17,22 +20,21 @@ import (
 // in the _supervised_in_test directory and takes expectations regarding output
 func executeGoTestRunner(t *testing.T, expectedLogs []string, unexpectedLogs []string) {
 	out, _ := exec.Command(
-		"go",
+		path.Join(runtime.GOROOT(), "bin", "go"),
 		"test",
 		"../_supervised_in_test/",
 		"-v",
 		"-run",
 		"^("+t.Name()+")$").CombinedOutput()
 
-	output := string(out)
-
-	// debug print output
-	//fmt.Println("\n >>>>>>>>>>>>>>>>>>>>>>>>>>>> DEBUG PRINT\n", t.Name(), "\n", output, "<<<<<<<<<<<<<<<<<<<<<<<<<<<< DEBUG PRINT")
+	goTestOutput := string(out)
+	ribbon := "------------------ EXTERNAL TEST OUTPUT (_supervised_in_test." + t.Name() + ")------------------"
+	debugMsgOutput := fmt.Sprintln(ribbon, "\n", goTestOutput, "\n", ribbon)
 
 	for _, logLine := range expectedLogs {
-		require.Truef(t, strings.Contains(output, logLine), "log should contain: '%s'", logLine)
+		require.Truef(t, strings.Contains(goTestOutput, logLine), "log should contain: '%s'\n\n%s", logLine, debugMsgOutput)
 	}
 	for _, logLine := range unexpectedLogs {
-		require.Falsef(t, strings.Contains(output, logLine), "log should not contain: '%s'", logLine)
+		require.Falsef(t, strings.Contains(goTestOutput, logLine), "log should not contain: '%s'\n\n%s", logLine, debugMsgOutput)
 	}
 }

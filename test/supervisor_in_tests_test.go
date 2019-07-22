@@ -59,7 +59,7 @@ func TestTRun_GoOnce_PanicsAfterSubTestPasses(t *testing.T) {
 		Passed, BeforeLoggerCreated, LoggedWithLogger, PanicOhNo,
 	}
 	expectNot := []string{
-		AfterCallPanic, MustNotShow, // TODO explain why Failed is excluded
+		Failed, AfterCallPanic, MustNotShow,
 	}
 	executeGoTestRunner(t, expect, expectNot)
 }
@@ -69,7 +69,7 @@ func TestTRun_GoOnce_LogsErrorAfterSubTestPasses(t *testing.T) {
 		Passed, BeforeLoggerCreated, LoggedWithLogger, ErrorWithLogger,
 	}
 	expectNot := []string{
-		MustNotShow, // TODO explain why Failed is excluded
+		Failed, MustNotShow,
 	}
 	executeGoTestRunner(t, expect, expectNot)
 }
