@@ -1,0 +1,9 @@
+[submodule "vendor/github.com/orbs-network/scribe"]
+	path = vendor/github.com/orbs-network/scribe
+	url = https://github.com/orbs-network/scribe
+[submodule "vendor/github.com/pkg/errors"]
+	path = vendor/github.com/pkg/errors
+	url = https://github.com/pkg/errors
+[submodule "vendor/github.com/stretchr/testify"]
+	path = vendor/github.com/stretchr/testify
+	url = https://github.com/stretchr/testify
