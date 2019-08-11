@@ -3,7 +3,7 @@ jobs:
   build-vendoring:
     docker:
       - image: circleci/golang:1.12
-    working_directory: /go/src/github.com/orbs-network/scribe/
+    working_directory: /go/src/github.com/orbs-network/govnr/
     steps:
       - checkout
       - run: ./git-submodule-checkout.sh
