@@ -9,36 +9,34 @@ package govnr
 import (
 	"context"
 	"fmt"
-	"github.com/orbs-network/scribe/log"
 	"github.com/pkg/errors"
 	"runtime"
-	"runtime/debug"
 	"strings"
 )
 
 type Errorer interface {
-	Error(message string, fields ...*log.Field)
+	Error(err error)
 }
 
 type ContextEndedChan chan struct{}
 
 // Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
-func GoOnce(errorer Errorer, f func()) {
+func GoOnce(errorHandler Errorer, f func()) {
 	go func() {
-		tryOnce(errorer, f)
+		tryOnce(errorHandler, f)
 	}()
 }
 
 // Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
 // If the provided Context isn't closed, re-runs f()
 // Returns a channel that is closed when the goroutine has quit due to context ending
-func GoForever(ctx context.Context, logger Errorer, f func()) ContextEndedChan {
+func GoForever(ctx context.Context, errorHandler Errorer, f func()) ContextEndedChan {
 	c := make(ContextEndedChan)
 	go func() {
 		defer close(c)
 
 		for {
-			tryOnce(logger, f)
+			tryOnce(errorHandler, f)
 			//TODO(v1) report number of restarts to metrics
 			if ctx.Err() != nil { // this returns non-nil when context has been closed via cancellation or timeout or whatever
 				return
@@ -50,20 +48,19 @@ func GoForever(ctx context.Context, logger Errorer, f func()) ContextEndedChan {
 
 // Runs f() on the original goroutine; if it panics, logs the error and stack trace to the specified Errorer
 // Very similar to GoOnce except doesn't start a new goroutine
-func Recover(errorer Errorer, f func()) {
-	tryOnce(errorer, f)
+func Recover(errorHandler Errorer, f func()) {
+	tryOnce(errorHandler, f)
 }
 
 // this function is needed so that we don't return out of the goroutine when it panics
-func tryOnce(errorer Errorer, f func()) {
-	defer recoverPanics(errorer)
+func tryOnce(errorHandler Errorer, f func()) {
+	defer recoverPanics(errorHandler)
 	f()
 }
 
-func recoverPanics(logger Errorer) {
+func recoverPanics(errorHandler Errorer) {
 	if p := recover(); p != nil {
-		e := errors.Errorf("\npanic: %v\n\ngoroutine panicked at:\n%s\n\n", p, identifyPanic())
-		logger.Error("recovered panic", log.Error(e), log.String("panic", "true"), log.String("stack-trace", string(debug.Stack())))
+		errorHandler.Error(errors.Errorf("\npanic: %v\n\ngoroutine panicked at:\n%s\n\n", p, identifyPanic()))
 	}
 }
 

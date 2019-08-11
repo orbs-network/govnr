@@ -8,23 +8,21 @@ package govnr
 
 import (
 	"context"
-	"github.com/orbs-network/scribe/log"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
 
 type report struct {
-	message string
-	fields  []*log.Field
+	err error
 }
 
 type collector struct {
 	errors chan report
 }
 
-func (c *collector) Error(message string, fields ...*log.Field) {
-	c.errors <- report{message, fields}
+func (c *collector) Error(err error) {
+	c.errors <- report{err}
 }
 
 func mockLogger() *collector {
@@ -44,16 +42,8 @@ func TestGoOnce_ReportsOnPanic(t *testing.T) {
 	}, "GoOnce panicked unexpectedly")
 
 	report := <-logger.errors
-	require.Equal(t, report.message, "recovered panic")
-	require.Len(t, report.fields, 3, "expected log to contain error, stack trace and panic flag")
+	require.Error(t, report.err)
 
-	errorField := report.fields[0]
-	panicField := report.fields[1]
-	stackTraceField := report.fields[2]
-	require.Contains(t, errorField.Value(), "foo")
-	require.Equal(t, panicField.Key, "panic")
-	require.Equal(t, stackTraceField.Key, "stack-trace")
-	require.Contains(t, stackTraceField.Value(), "localFunctionThatPanics")
 }
 
 func TestGoForever_ReportsOnPanicAndRestarts(t *testing.T) {
@@ -78,7 +68,7 @@ func TestGoForever_ReportsOnPanicAndRestarts(t *testing.T) {
 	for i := 0; i < numOfIterations; i++ {
 		select {
 		case report := <-logger.errors:
-			require.Equal(t, report.message, "recovered panic")
+			require.Error(t, report.err)
 		case <-time.After(1 * time.Second):
 			require.Fail(t, "long living goroutine didn't restart")
 		}
