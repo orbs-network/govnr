@@ -9,6 +9,10 @@ type ShutdownWaiter interface {
 	WaitUntilShutdown(shutdownContext context.Context)
 }
 
+type Supervisor interface {
+	Supervise(w ShutdownWaiter)
+}
+
 type superviseMarker interface {
 	MarkSupervised()
 }
