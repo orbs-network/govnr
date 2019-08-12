@@ -182,7 +182,7 @@ func (s *stdoutErrorer) Error(err error) {
 	fmt.Println(err.Error())
 }
 
-func ExampleUsageWithSupervisionTree() {
+func ExampleForever_UsageWithSupervisionTree() {
 	errorHandler := &stdoutErrorer{}
 	ctx, cancel := context.WithCancel(context.Background())
 
