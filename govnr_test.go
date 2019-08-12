@@ -13,28 +13,6 @@ import (
 	"time"
 )
 
-type report struct {
-	err error
-}
-
-type collector struct {
-	errors chan report
-}
-
-func (c *collector) Error(err error) {
-	c.errors <- report{err}
-}
-
-func mockLogger() *collector {
-	c := &collector{errors: make(chan report)}
-	return c
-}
-
-func bufferedLogger() *collector {
-	c := &collector{errors: make(chan report, 10)}
-	return c
-}
-
 func localFunctionThatPanics() {
 	panic("foo")
 }
@@ -144,7 +122,7 @@ func TestForever_ReportsOnPanicAndRestarts(t *testing.T) {
 }
 
 func TestForever_TerminatesWhenContextIsClosed(t *testing.T) {
-	logger := mockLogger()
+	logger := bufferedLogger()
 	ctx, cancel := context.WithCancel(context.Background())
 
 	bgStarted := make(chan struct{})
@@ -157,6 +135,7 @@ func TestForever_TerminatesWhenContextIsClosed(t *testing.T) {
 			return
 		}
 	})
+	handle.MarkSupervised()
 
 	<-bgStarted
 	cancel()

@@ -9,6 +9,10 @@ type ShutdownWaiter interface {
 	WaitUntilShutdown(shutdownContext context.Context)
 }
 
+type Supervisor interface {
+	MarkSupervised()
+}
+
 type TreeSupervisor struct {
 	supervised            []ShutdownWaiter
 	waitForShutdownCalled struct {
@@ -27,15 +31,14 @@ func (t *TreeSupervisor) WaitUntilShutdown(shutdownContext context.Context) {
 }
 
 func (t *TreeSupervisor) Supervise(w ShutdownWaiter) {
+	if s, ok := w.(Supervisor); ok {
+		s.MarkSupervised()
+	}
+
 	t.waitForShutdownCalled.Lock()
 	defer t.waitForShutdownCalled.Unlock()
 	if t.waitForShutdownCalled.called {
 		panic("Can't call Supervise() after WaitUntilShutdown has been called")
 	}
 	t.supervised = append(t.supervised, w)
-}
-
-func (t *TreeSupervisor) SuperviseForeverHandle(handle *ForeverHandle) {
-	handle.MarkSupervised()
-	t.Supervise(handle)
 }
