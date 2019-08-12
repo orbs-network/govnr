@@ -30,15 +30,20 @@ func mockLogger() *collector {
 	return c
 }
 
+func bufferedLogger() *collector {
+	c := &collector{errors: make(chan report, 10)}
+	return c
+}
+
 func localFunctionThatPanics() {
 	panic("foo")
 }
 
-func TestGoOnce_ReportsOnPanic(t *testing.T) {
+func TestOnce_ReportsOnPanic(t *testing.T) {
 	logger := mockLogger()
 
 	require.NotPanicsf(t, func() {
-		GoOnce(logger, localFunctionThatPanics)
+		Once(logger, localFunctionThatPanics)
 	}, "GoOnce panicked unexpectedly")
 
 	report := <-logger.errors
@@ -108,3 +113,90 @@ func TestGoForever_TerminatesWhenContextIsClosed(t *testing.T) {
 	}
 
 }
+
+
+func TestForever_ReportsOnPanicAndRestarts(t *testing.T) {
+	numOfIterations := 10
+
+	logger := mockLogger()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	count := 0
+
+	require.NotPanicsf(t, func() {
+		Forever(ctx, "some service", logger, func() {
+			if count > numOfIterations {
+				cancel()
+			} else {
+				count++
+			}
+			panic("foo")
+		})
+	}, "GoForever panicked unexpectedly")
+
+	for i := 0; i < numOfIterations; i++ {
+		select {
+		case report := <-logger.errors:
+			require.Error(t, report.err)
+		case <-time.After(1 * time.Second):
+			require.Fail(t, "long living goroutine didn't restart")
+		}
+	}
+}
+
+func TestForever_TerminatesWhenContextIsClosed(t *testing.T) {
+	logger := mockLogger()
+	ctx, cancel := context.WithCancel(context.Background())
+
+	bgStarted := make(chan struct{})
+	bgEnded := make(chan struct{})
+	handle := Forever(ctx, "another service", logger, func() {
+		bgStarted <- struct{}{}
+		select {
+		case <-ctx.Done():
+			bgEnded <- struct{}{}
+			return
+		}
+	})
+
+	<-bgStarted
+	cancel()
+
+	select {
+	case <-bgEnded:
+		// ok, invocation of cancel() caused goroutine to stop, we can now check if it restarts
+	case <-time.After(1 * time.Second):
+		require.Fail(t, "long living goroutine didn't stop")
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
+	defer cancel()
+	handle.WaitUntilShutdown(shutdownCtx)
+	require.Empty(t, logger.errors, "error was reported on shutdown")
+}
+
+func TestForeverHandle_ErrorsWhenTerminatedWithoutSupervision(t *testing.T) {
+	logger := bufferedLogger()
+
+	h := &ForeverHandle{closed: make(chan struct{}), errorHandler: logger, name: "foo"}
+	h.terminated()
+	select {
+	case report := <-logger.errors:
+		require.EqualError(t, report.err, "Forever governed goroutine foo terminated without being supervised")
+	default:
+		t.Errorf("handle didn't error on termination")
+	}
+}
+
+func TestForeverHandle_DoesNotErrorWhenTerminatedAfterSupervision(t *testing.T) {
+	logger := bufferedLogger()
+
+	h := &ForeverHandle{closed: make(chan struct{}), errorHandler: logger, name: "foo"}
+	h.MarkSupervised()
+	h.terminated()
+	require.Empty(t, logger.errors, "error was reported on shutdown")
+}
+
+
+
+

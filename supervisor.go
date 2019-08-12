@@ -8,10 +8,8 @@ package govnr
 
 import (
 	"context"
-	"fmt"
 	"github.com/pkg/errors"
-	"runtime"
-	"strings"
+	"sync"
 )
 
 type Errorer interface {
@@ -21,7 +19,16 @@ type Errorer interface {
 type ContextEndedChan chan struct{}
 
 // Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
+//
+// Deprecated; use Once instead
 func GoOnce(errorHandler Errorer, f func()) {
+	go func() {
+		tryOnce(errorHandler, f)
+	}()
+}
+
+// Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
+func Once(errorHandler Errorer, f func()) {
 	go func() {
 		tryOnce(errorHandler, f)
 	}()
@@ -30,6 +37,8 @@ func GoOnce(errorHandler Errorer, f func()) {
 // Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
 // If the provided Context isn't closed, re-runs f()
 // Returns a channel that is closed when the goroutine has quit due to context ending
+//
+// Deprecated; use Forever instead
 func GoForever(ctx context.Context, errorHandler Errorer, f func()) ContextEndedChan {
 	c := make(ContextEndedChan)
 	go func() {
@@ -46,48 +55,57 @@ func GoForever(ctx context.Context, errorHandler Errorer, f func()) ContextEnded
 	return c
 }
 
-// Runs f() on the original goroutine; if it panics, logs the error and stack trace to the specified Errorer
-// Very similar to GoOnce except doesn't start a new goroutine
-func Recover(errorHandler Errorer, f func()) {
-	tryOnce(errorHandler, f)
+type ForeverHandle struct {
+	sync.Mutex
+	closed       chan struct{}
+	errorHandler Errorer
+	name         string
+	supervised   bool
 }
 
-// this function is needed so that we don't return out of the goroutine when it panics
-func tryOnce(errorHandler Errorer, f func()) {
-	defer recoverPanics(errorHandler)
-	f()
-}
-
-func recoverPanics(errorHandler Errorer) {
-	if p := recover(); p != nil {
-		errorHandler.Error(errors.Errorf("\npanic: %v\n\ngoroutine panicked at:\n%s\n\n", p, identifyPanic()))
-	}
-}
-
-func identifyPanic() string {
-	var name, file string
-	var line int
-	var pc [16]uintptr
-
-	n := runtime.Callers(3, pc[:])
-	for _, pc := range pc[:n] {
-		fn := runtime.FuncForPC(pc)
-		if fn == nil {
-			continue
-		}
-		file, line = fn.FileLine(pc)
-		name = fn.Name()
-		if !strings.HasPrefix(name, "runtime.") {
-			break
+func (h *ForeverHandle) WaitUntilShutdown(timeoutCtx context.Context) {
+	select {
+	case <-h.closed:
+	case <-timeoutCtx.Done():
+		if timeoutCtx.Err() == context.DeadlineExceeded {
+			h.errorHandler.Error(errors.Wrapf(timeoutCtx.Err(), "Forever governed goroutine %s timed out while waiting for shutdown", h.name))
 		}
 	}
+}
 
-	switch {
-	case name != "":
-		return fmt.Sprintf("%v:%v", name, line)
-	case file != "":
-		return fmt.Sprintf("%v:%v", file, line)
+func (h *ForeverHandle) Done() ContextEndedChan {
+	return h.closed
+}
+
+func (h *ForeverHandle) MarkSupervised() {
+	h.Lock()
+	defer h.Unlock()
+	h.supervised = true
+}
+
+func (h *ForeverHandle) terminated() {
+	close(h.closed)
+	h.Lock()
+	defer h.Unlock()
+	if !h.supervised {
+		h.errorHandler.Error(errors.Errorf("Forever governed goroutine %s terminated without being supervised", h.name))
 	}
+}
 
-	return fmt.Sprintf("pc:%x", pc)
+// Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
+// If the provided Context isn't closed, re-runs f()
+// Returns a construct allowing to wait for graceful shutdown
+func Forever(ctx context.Context, name string, errorHandler Errorer, f func()) *ForeverHandle {
+	h := &ForeverHandle{closed: make(ContextEndedChan), name: name, errorHandler: errorHandler}
+	go func() {
+		defer h.terminated()
+
+		for {
+			tryOnce(errorHandler, f)
+			if ctx.Err() != nil { // this returns non-nil when context has been closed via cancellation or timeout or whatever
+				return
+			}
+		}
+	}()
+	return h
 }
