@@ -1,8 +1,5 @@
 # govnr
-![alt text](https://raw.githubusercontent.com/orbs-network/govnr/master/one-does-not-simply.jpg)
-
-
-One does not simply start a goroutine.
+![one does not simply start a goroutine.](https://raw.githubusercontent.com/orbs-network/govnr/master/one-does-not-simply.jpg)
 
 [![CI](https://circleci.com/gh/orbs-network/govnr/tree/master.svg?style=svg)](https://circleci.com/gh/orbs-network/govnr/tree/master)
 
