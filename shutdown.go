@@ -9,7 +9,7 @@ type ShutdownWaiter interface {
 	WaitUntilShutdown(shutdownContext context.Context)
 }
 
-type Supervisor interface {
+type superviseMarker interface {
 	MarkSupervised()
 }
 
@@ -31,7 +31,7 @@ func (t *TreeSupervisor) WaitUntilShutdown(shutdownContext context.Context) {
 }
 
 func (t *TreeSupervisor) Supervise(w ShutdownWaiter) {
-	if s, ok := w.(Supervisor); ok {
+	if s, ok := w.(superviseMarker); ok {
 		s.MarkSupervised()
 	}
 
