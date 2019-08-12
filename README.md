@@ -1,5 +1,7 @@
 # govnr
 
+One does not simply start a goroutine.
+
 [![CI](https://circleci.com/gh/orbs-network/govnr/tree/master.svg?style=svg)](https://circleci.com/gh/orbs-network/govnr/tree/master)
 
 Use `govnr` to launch supervised goroutines. 

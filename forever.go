@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-// Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
+// Runs f() in a new goroutine; if it panics, emits the error to the specified Errorer
 // If the provided Context isn't closed, re-runs f()
 // Returns a channel that is closed when the goroutine has quit due to context ending
 //
@@ -64,9 +64,10 @@ func (h *ForeverHandle) terminated() {
 	}
 }
 
-// Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
-// If the provided Context isn't closed, re-runs f()
-// Returns a construct allowing to wait for graceful shutdown
+// Runs f() in a new goroutine; if it panics, emits the error to the provided Errorer.
+// If the provided Context isn't closed, re-runs f().
+// Returns a ForeverHandle to allow a Supervisor to wait for graceful shutdown.
+// When f() exists normally, if the ForeverHandle hasn't been passed to a Supervisor, an error will be emitted to the provided Errorer.
 func Forever(ctx context.Context, name string, errorHandler Errorer, f func()) *ForeverHandle {
 	h := &ForeverHandle{closed: make(ContextEndedChan), name: name, errorHandler: errorHandler}
 	go func() {

@@ -6,6 +6,8 @@ import (
 )
 
 type ShutdownWaiter interface {
+	// Implementors of WaitUntilShutdown are expected to block until any goroutine they spawned have finished, or until the provided context has closed
+	// Any persistent goroutine started with Forever is a ShutdownWaiter
 	WaitUntilShutdown(shutdownContext context.Context)
 }
 
@@ -13,10 +15,15 @@ type Supervisor interface {
 	Supervise(w ShutdownWaiter)
 }
 
-type superviseMarker interface {
+type supervisedMarker interface {
 	MarkSupervised()
 }
 
+// Useful for creating supervision trees; that is, nested object graphs that spawn long-running goroutines where the top level
+// object needs to block until all goroutines in the systems have shut down. As such, TreeSupervisor is both a Supervisor and a ShutdownWaiter.
+// When WaitUntilShutdown is called, it will in turn call WaitUntilShutdown on all of its Supervised ShutdownWaiters.
+//
+// Note that after calling WaitUntilShutdown it is no longer possible to call Supervise, and any subsequent call will panic.
 type TreeSupervisor struct {
 	supervised            []ShutdownWaiter
 	waitForShutdownCalled struct {
@@ -35,7 +42,7 @@ func (t *TreeSupervisor) WaitUntilShutdown(shutdownContext context.Context) {
 }
 
 func (t *TreeSupervisor) Supervise(w ShutdownWaiter) {
-	if s, ok := w.(superviseMarker); ok {
+	if s, ok := w.(supervisedMarker); ok {
 		s.MarkSupervised()
 	}
 
