@@ -114,7 +114,6 @@ func TestGoForever_TerminatesWhenContextIsClosed(t *testing.T) {
 
 }
 
-
 func TestForever_ReportsOnPanicAndRestarts(t *testing.T) {
 	numOfIterations := 10
 
@@ -169,7 +168,7 @@ func TestForever_TerminatesWhenContextIsClosed(t *testing.T) {
 		require.Fail(t, "long living goroutine didn't stop")
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 1 * time.Second)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	handle.WaitUntilShutdown(shutdownCtx)
 	require.Empty(t, logger.errors, "error was reported on shutdown")
@@ -196,7 +195,3 @@ func TestForeverHandle_DoesNotErrorWhenTerminatedAfterSupervision(t *testing.T) 
 	h.terminated()
 	require.Empty(t, logger.errors, "error was reported on shutdown")
 }
-
-
-
-
