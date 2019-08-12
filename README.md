@@ -12,6 +12,8 @@ The package offers:
 
 [Docs](https://godoc.org/github.com/orbs-network/govnr) are available but could probably be better. PRs will be appreciated!
 
+Used extensively in [Orbs Network's golang implementation](https://github.com/orbs-network/orbs-network-go) to make sure all background processes play nicely.
+
 Example usage:
 ```golang
 
