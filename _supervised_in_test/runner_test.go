@@ -14,6 +14,18 @@ import (
 	"time"
 )
 
+type scribeErrorer struct {
+	logger log.Logger
+}
+
+func (s *scribeErrorer) Error(err error) {
+	s.logger.Error("got an error", log.Error(err))
+}
+
+func wrap(logger log.Logger) *scribeErrorer {
+	return &scribeErrorer{logger}
+}
+
 func Test_Panics(t *testing.T) {
 	t.Log(logLine.BeforeLoggerCreated)
 	testLogger := log.DefaultTestingLogger(t)
@@ -45,7 +57,7 @@ func TestGoOnce_Panics(t *testing.T) {
 	testLogger := log.DefaultTestingLogger(t)
 	testLogger.Info(logLine.LoggedWithLogger)
 
-	govnr.GoOnce(testLogger, func() {
+	govnr.Once(wrap(testLogger), func() {
 		t.Log(logLine.BeforeCallPanic)
 		theFunctionThrowingThePanic()
 		t.Log(logLine.AfterCallPanic)
@@ -66,7 +78,7 @@ func TestGoOnce_LogsError(t *testing.T) {
 	testLogger := log.DefaultTestingLogger(t)
 	testLogger.Info(logLine.LoggedWithLogger)
 
-	govnr.GoOnce(testLogger, func() {
+	govnr.Once(wrap(testLogger), func() {
 		t.Log(logLine.BeforeLoggerError)
 		testLogger.Error(logLine.ErrorWithLogger)
 		t.Log(logLine.AfterLoggerError)
@@ -87,7 +99,7 @@ func TestTRun_Panics(t *testing.T) {
 		t.Log(logLine.BeforeLoggerCreated)
 		subTestLogger := log.DefaultTestingLogger(t)
 		subTestLogger.Info(logLine.LoggedWithLogger)
-		govnr.Recover(subTestLogger, func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
+		govnr.Recover(wrap(subTestLogger), func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
 
 			t.Log(logLine.BeforeCallPanic)
 			theFunctionThrowingThePanic()
@@ -104,7 +116,7 @@ func TestTRun_LogsError(t *testing.T) {
 		t.Log(logLine.BeforeLoggerCreated)
 		subTestLogger := log.DefaultTestingLogger(t)
 		subTestLogger.Info(logLine.LoggedWithLogger)
-		govnr.Recover(subTestLogger, func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
+		govnr.Recover(wrap(subTestLogger), func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
 
 			t.Log(logLine.BeforeLoggerError)
 			subTestLogger.Error(logLine.ErrorWithLogger)
@@ -121,9 +133,9 @@ func TestTRun_GoOnce_Panics(t *testing.T) {
 		t.Log(logLine.BeforeLoggerCreated)
 		subTestLogger := log.DefaultTestingLogger(t)
 		subTestLogger.Info(logLine.LoggedWithLogger)
-		govnr.Recover(subTestLogger, func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
+		govnr.Recover(wrap(subTestLogger), func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
 
-			govnr.GoOnce(subTestLogger, func() {
+			govnr.Once(wrap(subTestLogger), func() {
 				t.Log(logLine.BeforeCallPanic)
 				theFunctionThrowingThePanic()
 				t.Log(logLine.AfterCallPanic)
@@ -145,9 +157,9 @@ func TestTRun_GoOnce_LogsError(t *testing.T) {
 		t.Log(logLine.BeforeLoggerCreated)
 		subTestLogger := log.DefaultTestingLogger(t)
 		subTestLogger.Info(logLine.LoggedWithLogger)
-		govnr.Recover(subTestLogger, func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
+		govnr.Recover(wrap(subTestLogger), func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
 
-			govnr.GoOnce(subTestLogger, func() {
+			govnr.Once(wrap(subTestLogger), func() {
 				t.Log(logLine.BeforeLoggerError)
 				subTestLogger.Error(logLine.ErrorWithLogger)
 				t.Log(logLine.AfterLoggerError)
@@ -172,10 +184,10 @@ func TestTRun_GoOnce_PanicsAfterSubTestPasses(t *testing.T) {
 		testOutput := log.NewTestOutput(t, log.NewHumanReadableFormatter())
 		subTestLogger := log.GetLogger().WithOutput(testOutput)
 		subTestLogger.Info(logLine.LoggedWithLogger)
-		govnr.Recover(subTestLogger, func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
+		govnr.Recover(wrap(subTestLogger), func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
 			defer testOutput.TestTerminated() // this is required to prevent crash
 
-			govnr.GoOnce(subTestLogger, func() {
+			govnr.Once(wrap(subTestLogger), func() {
 				<-subTestPassedChannel
 				// still in goroutine after the SubTest passes
 
@@ -205,10 +217,10 @@ func TestTRun_GoOnce_LogsErrorAfterSubTestPasses(t *testing.T) {
 		testOutput := log.NewTestOutput(t, log.NewHumanReadableFormatter())
 		subTestLogger := log.GetLogger().WithOutput(testOutput)
 		subTestLogger.Info(logLine.LoggedWithLogger)
-		govnr.Recover(subTestLogger, func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
+		govnr.Recover(wrap(subTestLogger), func() { // t.Run is dangerous because it creates an unsupervised goroutine, we must use Recover inside
 			defer testOutput.TestTerminated() // this is required to prevent crash
 
-			govnr.GoOnce(subTestLogger, func() {
+			govnr.Once(wrap(subTestLogger), func() {
 				<-subTestPassedChannel
 				// still in goroutine after the SubTest passes
 
