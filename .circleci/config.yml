@@ -1,14 +1,6 @@
 version: 2
 jobs:
-  build-vendoring:
-    docker:
-      - image: circleci/golang:1.12
-    working_directory: /go/src/github.com/orbs-network/govnr/
-    steps:
-      - checkout
-      - run: ./git-submodule-checkout.sh
-      - run: go test ./... -v
-  build-go-modules:
+  build:
     docker:
       - image: circleci/golang:1.12
     steps:
@@ -19,5 +11,4 @@ workflows:
   version: 2
   build:
     jobs:
-      - build-vendoring
-      - build-go-modules
+      - build
