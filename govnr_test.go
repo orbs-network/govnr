@@ -118,7 +118,9 @@ func TestForeverHandle_DoesNotRaceWhenContextClosedBeforeSupervision(t *testing.
 	cancel()
 	logger := bufferedLogger()
 
-	handle := Forever(ctx, "another service", logger, func() {})
+	handle := Forever(ctx, "another service", logger, func() {
+		t.Errorf("job should not be called")
+	})
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	time.Sleep(50 * time.Millisecond)

@@ -65,10 +65,10 @@ func Forever(ctx context.Context, name string, errorHandler Errorer, f func()) *
 		h.waitUntilSupervised(ctx)
 		defer h.terminated()
 		for {
-			tryOnce(errorHandler, f)
 			if ctx.Err() != nil { // this returns non-nil when context has been closed via cancellation or timeout or whatever
 				return
 			}
+			tryOnce(errorHandler, f)
 		}
 	}()
 	return h
