@@ -38,7 +38,7 @@ func TestForever_ReportsOnPanicAndRestarts(t *testing.T) {
 	count := 0
 
 	require.NotPanicsf(t, func() {
-		Forever(ctx, "some service", logger, func() {
+		handle := Forever(ctx, "some service", logger, func() {
 			if count > numOfIterations {
 				cancel()
 			} else {
@@ -46,6 +46,7 @@ func TestForever_ReportsOnPanicAndRestarts(t *testing.T) {
 			}
 			panic("foo")
 		})
+		handle.MarkSupervised()
 	}, "GoForever panicked unexpectedly")
 
 	for i := 0; i < numOfIterations; i++ {
@@ -93,7 +94,7 @@ func TestForever_TerminatesWhenContextIsClosed(t *testing.T) {
 func TestForeverHandle_ErrorsWhenTerminatedWithoutSupervision(t *testing.T) {
 	logger := bufferedLogger()
 
-	h := &ForeverHandle{closed: make(chan struct{}), errorHandler: logger, name: "foo"}
+	h := &ForeverHandle{closed: make(chan struct{}), supervisedChan: make(chan struct{}), errorHandler: logger, name: "foo"}
 	h.terminated()
 	select {
 	case report := <-logger.errors:
@@ -106,8 +107,23 @@ func TestForeverHandle_ErrorsWhenTerminatedWithoutSupervision(t *testing.T) {
 func TestForeverHandle_DoesNotErrorWhenTerminatedAfterSupervision(t *testing.T) {
 	logger := bufferedLogger()
 
-	h := &ForeverHandle{closed: make(chan struct{}), errorHandler: logger, name: "foo"}
+	h := &ForeverHandle{closed: make(chan struct{}), supervisedChan: make(chan struct{}), errorHandler: logger, name: "foo"}
 	h.MarkSupervised()
 	h.terminated()
+	require.Empty(t, logger.errors, "error was reported on shutdown")
+}
+
+func TestForeverHandle_DoesNotRaceWhenContextClosedBeforeSupervision(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	logger := bufferedLogger()
+
+	handle := Forever(ctx, "another service", logger, func() {})
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	time.Sleep(50 * time.Millisecond)
+	handle.MarkSupervised()
+	handle.WaitUntilShutdown(shutdownCtx)
+
 	require.Empty(t, logger.errors, "error was reported on shutdown")
 }
