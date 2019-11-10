@@ -6,27 +6,6 @@ import (
 	"sync"
 )
 
-// Runs f() in a new goroutine; if it panics, emits the error to the specified Errorer
-// If the provided Context isn't closed, re-runs f()
-// Returns a channel that is closed when the goroutine has quit due to context ending
-//
-// Deprecated; use Forever instead
-func GoForever(ctx context.Context, errorHandler Errorer, f func()) ContextEndedChan {
-	c := make(ContextEndedChan)
-	go func() {
-		defer close(c)
-
-		for {
-			tryOnce(errorHandler, f)
-			//TODO(v1) report number of restarts to metrics
-			if ctx.Err() != nil { // this returns non-nil when context has been closed via cancellation or timeout or whatever
-				return
-			}
-		}
-	}()
-	return c
-}
-
 type ForeverHandle struct {
 	sync.Mutex
 	closed       chan struct{}
@@ -82,4 +61,3 @@ func Forever(ctx context.Context, name string, errorHandler Errorer, f func()) *
 	}()
 	return h
 }
-
