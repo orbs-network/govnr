@@ -91,29 +91,7 @@ func TestForever_TerminatesWhenContextIsClosed(t *testing.T) {
 	require.Empty(t, logger.errors, "error was reported on shutdown")
 }
 
-func TestForeverHandle_ErrorsWhenTerminatedWithoutSupervision(t *testing.T) {
-	logger := bufferedLogger()
-
-	h := &ForeverHandle{closed: make(chan struct{}), supervisedChan: make(chan struct{}), errorHandler: logger, name: "foo"}
-	h.terminated()
-	select {
-	case report := <-logger.errors:
-		require.EqualError(t, report.err, "Forever governed goroutine foo terminated without being supervised")
-	default:
-		t.Errorf("handle didn't error on termination")
-	}
-}
-
-func TestForeverHandle_DoesNotErrorWhenTerminatedAfterSupervision(t *testing.T) {
-	logger := bufferedLogger()
-
-	h := &ForeverHandle{closed: make(chan struct{}), supervisedChan: make(chan struct{}), errorHandler: logger, name: "foo"}
-	h.MarkSupervised()
-	h.terminated()
-	require.Empty(t, logger.errors, "error was reported on shutdown")
-}
-
-func TestForeverHandle_DoesNotRaceWhenContextClosedBeforeSupervision(t *testing.T) {
+func TestForever_DoesNotRaceWhenContextClosedBeforeSupervision(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	logger := bufferedLogger()
