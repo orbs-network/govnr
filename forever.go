@@ -48,7 +48,7 @@ func (h *ForeverHandle) terminated() {
 // Returns a ForeverHandle to allow a Supervisor to wait for graceful shutdown.
 // When f() exists normally, if the ForeverHandle hasn't been passed to a Supervisor, an error will be emitted to the provided Errorer.
 func Forever(ctx context.Context, name string, errorHandler Errorer, f func()) *ForeverHandle {
-	h := &ForeverHandle{closed: make(ContextEndedChan), name: name, errorHandler: errorHandler}
+	h := &ForeverHandle{closed: make(chan struct{}), name: name, errorHandler: errorHandler}
 	go func() {
 		defer h.terminated()
 
