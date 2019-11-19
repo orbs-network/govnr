@@ -10,16 +10,7 @@ type Errorer interface {
 	Error(err error)
 }
 
-type ContextEndedChan chan struct{}
-
-// Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
-//
-// Deprecated; use Once instead
-func GoOnce(errorHandler Errorer, f func()) {
-	go func() {
-		tryOnce(errorHandler, f)
-	}()
-}
+type ContextEndedChan <-chan struct{}
 
 // Runs f() in a new goroutine; if it panics, logs the error and stack trace to the specified Errorer
 func Once(errorHandler Errorer, f func()) {
